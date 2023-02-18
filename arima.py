@@ -6,20 +6,8 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error
 df = pd.read_excel("global-player-stats.xlsx")
-df.sort_values('date', inplace=True)
 
-series = df['num_attempts'].to_numpy()
-
-plt.plot(series)
-#  to test the data is staionary:
-def printValue(data):
-    result = adfuller(data, autolog='AIC')
-    print("ADF",result[0])
-    print("p value", result[1])
-    print('lags ', result[2])
-    print('rows for critical values and ADF regression ', result[3])
-
-# if the p value is huge, then it's not staionary like .6 ....
+df['num_attempts'].plot(figsize= (20,9))
 
 # now, train the model
 potential_model = auto_arima(series, trace = True, suppress_warnings = True)
