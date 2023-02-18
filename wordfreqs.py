@@ -7,7 +7,6 @@ class WordFreqs:
         self.data : DataFrame = pd.read_csv(path)
         self.data : DataFrame = self.data.loc[lambda data: data['word'].str.len() == 5, ]
         self.data.set_index('word', inplace=True)
-        print(self.data)
 
     def get_freq(self, word):
         return self.data.at[word, 'count']

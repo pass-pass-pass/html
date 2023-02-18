@@ -107,20 +107,23 @@ class PlayerStat:
         plt.plot(prediction)
         plt.show()
         
-    def make_word_attribute_table(self, path):
+    def make_hardmode_table(self, path):
         wf = WordFreqs("word_freqs.csv")
-        valid_words = self.data.loc[wf.has_freqs(self.data['word']), 'word']
-        word_freqs = wf.get_freqs(valid_words)
+        valid_data = self.data.loc[wf.has_freqs(self.data['word'])]
 
-        valid_words = valid_words.reindex()
-        word_freqs.index = valid_words.index
+        words = valid_data['word']
+        freqs = wf.get_freqs(words)
+        freqs.index = words.index
+        hardmode_percents = valid_data['num_hardmode_attempts'] / valid_data['num_attempts']
+
         attrs = {
-            'word': valid_words,
-            'freqs': word_freqs,
+            'word': words,
+            'freq': freqs,
+            'hardmode_percent': hardmode_percents
         }
         to_save = DataFrame(attrs)
         to_save.to_excel(path)
         
 
 ps = PlayerStat("global-player-stats.xlsx")
-ps.make_word_attribute_table("word-attributes.xlsx")
+ps.make_hardmode_table("hardmode-stats.xlsx")
