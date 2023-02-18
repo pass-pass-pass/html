@@ -1,10 +1,18 @@
+import warnings
+
 import pandas as pd
 import numpy as np
+
+from scipy.signal import periodogram
 from matplotlib import pyplot as plt
 
+from statsmodels.graphics.tsaplots import plot_pacf, plot_acf
+from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.tsa.arima.model import ARIMA
+
 from pmdarima import auto_arima
-from statsmodels.tsa.arima_model import ARIMA
-from sklearn.metrics import mean_squared_error
+from pmdarima.utils.visualization import decomposed_plot
+from pmdarima.arima import decompose
 
 from pandas import DataFrame
 
@@ -21,20 +29,66 @@ class PlayerStat:
         plt.show()
 
     def draw_num_attempts(self):
+        plt.figure()
         plt.xlabel("Date")
         plt.ylabel("Number of attempts")
         plt.title("Number of Wordle Attempts per Day vs. Date")
         plt.plot(self.data['date'], self.data['num_attempts'])
         plt.show()
 
-    def draw_diff_num_attempts(self):
+    def decompose_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
-        diffs = num_attempts[1:] - num_attempts[:-1] # diff[i] is num_attempts[i + 1] - num_attempts[i]
+
+        diffs = num_attempts
+        order = 0
+        while True:
+
+            warnings.simplefilter("ignore") # kpss interpolation warning
+            kpss_p = kpss(diffs)[1]
+            adf_p = adfuller(diffs)[1]
+
+            THRESHOLD = 0.05
+            kpss_stationary = kpss_p > THRESHOLD
+            adf_stationary = adf_p < THRESHOLD
+
+            print(f'Order {order}:')
+            print(f'KPSS stationary: {kpss_stationary}')
+            print(f'ADF stationary: {adf_stationary}')
+
+            if kpss_stationary and adf_stationary:
+                break
+
+            order += 1
+            diffs = diffs[1:] - diffs[:-1]
+
+        plt.figure()
         plt.xlabel("Date")
-        plt.ylabel("Change in number of attempts")
-        plt.title("Change in Number of Attempts per Day vs. Date")
-        plt.plot(self.data['date'][1:], diffs)
+        plt.ylabel("Stationary Time Series")
+        plt.title("Stationary Attempts vs. Date Series")
+        plt.plot(self.data['date'][order:], diffs)
         plt.show()
 
+        plot_pacf(num_attempts, lags=range(0, 20), method='ldb')
+        freqs, powers = periodogram(diffs)
+        freq_data = DataFrame({"freq" : freqs, "power": powers})
+        freq_data.sort_values("power", ascending=False, inplace=True)
+        print(freq_data.head(3))
+        plt.figure()
+        plt.scatter(freqs, powers)
+
+        plt.show()
+
+    def arima_num_attempts(self):
+        num_attempts = self.data['num_attempts'].to_numpy()
+        NUM_TRAINING = 300
+        training_data = num_attempts[:NUM_TRAINING]
+        validation_data = num_attempts[NUM_TRAINING:]
+
+        arima = auto_arima(training_data, trace=True, suppress_warnings=True)
+        figure_kwargs = {}
+        decomposed_plot(decompose(training_data, type_='additive', m=4), figure_kwargs=figure_kwargs)
+        
+
 ps = PlayerStat("global-player-stats.xlsx")
-ps.arima_num_attemps()
+# ps.draw_num_attempts()
+ps.arima_num_attempts()
