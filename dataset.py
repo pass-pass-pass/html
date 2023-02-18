@@ -8,13 +8,14 @@ from matplotlib import pyplot as plt
 
 from statsmodels.graphics.tsaplots import plot_pacf, plot_acf
 from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.tools.eval_measures import rmse
 from statsmodels.tsa.arima.model import ARIMA
 
 from pmdarima import auto_arima
 from pmdarima.utils.visualization import decomposed_plot
 from pmdarima.arima import decompose
 
-from pandas import DataFrame
+from pandas import DataFrame, DateOffset
 
 class PlayerStat:
 
@@ -36,7 +37,7 @@ class PlayerStat:
         plt.plot(self.data['date'], self.data['num_attempts'])
         plt.show()
 
-    def decompose_num_attempts(self):
+    def explore_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
 
         diffs = num_attempts
@@ -78,15 +79,32 @@ class PlayerStat:
 
         plt.show()
 
-    def arima_num_attempts(self):
+    def decompose_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
-        NUM_TRAINING = 300
+        decomposed = decompose(num_attempts, type_='multiplicative', m=7)
+        decomposed_plot(decomposed, figure_kwargs={})
+        _, trend, seasonal, random = decomposed
+        # plt.plot(seasonal)
+        # plt.show()
+
+    def arima_num_attempts(self):
+        num_attempts = self.data['num_attempts']
+        NUM_TRAINING = 250
         training_data = num_attempts[:NUM_TRAINING]
         validation_data = num_attempts[NUM_TRAINING:]
 
-        arima = auto_arima(training_data, trace=True, suppress_warnings=True)
-        figure_kwargs = {}
-        decomposed_plot(decompose(training_data, type_='additive', m=4), figure_kwargs=figure_kwargs)
+        # arima = auto_arima(training_data, trace=True, m=7, suppress_warnings=True)
+        arima: ARIMA = ARIMA(training_data, order = (1, 1, 0)).fit()  # order is the one we got from summary
+        prediction = arima.predict(NUM_TRAINING + 1, NUM_TRAINING + len(validation_data), typ="levels") # this thing is fucking right inclusive
+        abs_error = rmse(prediction, validation_data)
+        rel_error = abs_error / np.mean(validation_data)
+        print(rel_error)
+
+        prediction.index = validation_data.index
+        plt.plot(validation_data)
+        plt.plot(prediction)
+        plt.show()
+        
         
 
 ps = PlayerStat("global-player-stats.xlsx")
