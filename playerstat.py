@@ -19,7 +19,7 @@ from pandas import DataFrame, DateOffset
 
 from wordfreqs import WordFreqs
 
-class PlayerStat:
+class PlayerStats:
 
     def __init__(self, path) -> None:
         self.path = path
@@ -111,19 +111,26 @@ class PlayerStat:
         wf = WordFreqs("word_freqs.csv")
         valid_data = self.data.loc[wf.has_freqs(self.data['word'])]
 
+        dates = pd.to_datetime(valid_data['date'])
+        print(dates)
         words = valid_data['word']
         freqs = wf.get_freqs(words)
         freqs.index = words.index
         hardmode_percents = valid_data['num_hardmode_attempts'] / valid_data['num_attempts']
 
         attrs = {
+            'date': dates,
             'word': words,
             'freq': freqs,
             'hardmode_percent': hardmode_percents
         }
         to_save = DataFrame(attrs)
-        to_save.to_excel(path)
+        to_save.set_index(to_save['date'])
+        # to_save.to_excel(path)
+        writer = pd.ExcelWriter(path, date_format='%Y-%m-%d')
+        to_save.to_excel(writer)
+        writer.close()
         
 
-ps = PlayerStat("global-player-stats.xlsx")
+ps = PlayerStats("global-player-stats.xlsx")
 ps.make_hardmode_table("hardmode-stats.xlsx")
