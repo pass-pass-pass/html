@@ -33,7 +33,7 @@ class HardmodeStats:
     def find_correlations(self):
         #for pos in self.data['part_of_speech'].unique():
         #    self.data['pos'] = self.data[self.data['part_of_speech'] == pos, ]
-        data = self.data.loc[self.data['hardmode_percent'] < 0.2]
+        data = self.data.loc[self.data['hardmode_percent'] < 40]
         data['freq'] = np.log(self.data['freq'])
         data = pd.get_dummies(data, columns=['part_of_speech'])
 
@@ -47,4 +47,5 @@ class HardmodeStats:
         plt.show()
 
 hs = HardmodeStats('hardmode-stats.xlsx')
-hs.draw_part_of_speech()
+hs.draw_percents()
+hs.find_correlations()

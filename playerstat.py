@@ -118,7 +118,7 @@ class PlayerStats:
         words = valid_data['word']
         freqs = wf.get_freqs(words)
         parts = pos.get_parts(words)
-        hardmode_percents = valid_data['num_hardmode_attempts'] / valid_data['num_attempts']
+        hardmode_percents = valid_data['num_hardmode_attempts'] / valid_data['num_attempts'] * 100
         num_dup_letters = valid_data['word'].apply(lambda val: len(val) - len(set(val)))
 
         parts.index = words.index
