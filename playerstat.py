@@ -18,6 +18,7 @@ from pmdarima.arima import decompose
 from pandas import DataFrame, DateOffset
 
 from wordfreqs import WordFreqs
+from partofspeech import PartOfSpeech
 
 class PlayerStats:
 
@@ -109,27 +110,29 @@ class PlayerStats:
         
     def make_hardmode_table(self, path):
         wf = WordFreqs("word_freqs.csv")
+        pos = PartOfSpeech("part_of_speech.csv")
         valid_data = self.data.loc[wf.has_freqs(self.data['word'])]
+        valid_data = valid_data.loc[pos.has_parts(valid_data['word'])]
 
         dates = pd.to_datetime(valid_data['date'])
-        print(dates)
         words = valid_data['word']
         freqs = wf.get_freqs(words)
-        freqs.index = words.index
+        parts = pos.get_parts(words)
         hardmode_percents = valid_data['num_hardmode_attempts'] / valid_data['num_attempts']
+        num_dup_letters = valid_data['word'].apply(lambda val: len(val) - len(set(val)))
 
+        parts.index = words.index
+        freqs.index = words.index
         attrs = {
             'date': dates,
             'word': words,
             'freq': freqs,
-            'hardmode_percent': hardmode_percents
+            'part_of_speech': parts,
+            'hardmode_percent': hardmode_percents,
+            'num_dup_letters': num_dup_letters,
         }
         to_save = DataFrame(attrs)
-        to_save.set_index(to_save['date'])
-        # to_save.to_excel(path)
-        writer = pd.ExcelWriter(path, date_format='%Y-%m-%d')
-        to_save.to_excel(writer)
-        writer.close()
+        to_save.to_excel(path, index=False)
         
 
 ps = PlayerStats("global-player-stats.xlsx")
