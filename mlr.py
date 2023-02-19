@@ -5,17 +5,23 @@ from sklearn.metrics import r2_score
 from sklearn import metrics
 import numpy as np
 
-df = pd.read_csv()
+df = pd.read_excel("datasets/global-player-stats.xlsx")
 
 # drop unnecessary data
 
-df = df.drop(columns = 'words')
+df = df.drop(columns = 'word')
 df = df.drop(columns = 'num_attempts')
 # slice data so that we can have all the relavant data except for all the tries
-X = df[].values
+num_tries = np.tile(np.arange(1, 8), (df.shape[0], 1))
+tries_probability = df.iloc[:, 3:10]
+df['mean_num_tries'] = np.average(num_tries, weights=tries_probability, axis=1)
+
+print(df)
+
+X = df[('date', '')].values
 
 # y is the data of six tries
-y = df[].values
+y = df[1].values
 
 
 # test the model
