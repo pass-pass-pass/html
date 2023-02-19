@@ -104,43 +104,28 @@ class PlayerStats:
         # robust handles initial chaos better than non-robust
         # STL found a 7 day period
         result: DecomposeResult = STL(num_attempts, robust=True).fit()
-        # fig = result.plot()
+        result.plot()
         # self.add_stl_plot(fig, result_auto_period, ["7 day period", "Auto period"])
-        # plt.show()
+        plt.show()
 
-        # deseasoned_series = num_attempts - result.seasonal
-        # deseasoned_model: ARIMA = ARIMA(deseasoned_series, order=(1, 1, 0), trend='t').fit()
-        # deseasoned_prediction = deseasoned_model.predict(datetime(2023, 1, 1), datetime(2023, 3, 1))
-        # plt.plot(deseasoned_prediction)
-        # plt.plot(num_attempts)
-        # plt.show()
-
+    def stl_predict_num_attempts(self):
+        # https://www.statsmodels.org/dev/generated/statsmodels.tsa.forecasting.stl.STLForecast.html#statsmodels.tsa.forecasting.stl.STLForecast
+        num_attempts = self.data['num_attempts']
+        num_attempts.index = self.data['date']
         arima_params = dict(order=(1, 1, 0), trend='t')
         forecast_model = STLForecast(num_attempts, ARIMA, model_kwargs=arima_params, period=7, robust=True).fit()
         print(forecast_model.summary())
-        prediction = forecast_model.get_prediction(datetime(2023, 1, 1), datetime(2023, 3, 1), dynamic=False)
+        prediction = forecast_model.get_prediction(datetime(2023, 1, 1), datetime(2023, 3, 1), dynamic=True)
         interval_95 = prediction.conf_int(0.05)
         interval_90 = prediction.conf_int(0.1)
+        prediction_index = prediction.summary_frame().index
 
         plt.figure()
+        plt.fill_between(prediction_index, interval_95['lower'], interval_95['upper'], color='b', alpha=0.1)
+        plt.fill_between(prediction_index, interval_90['lower'], interval_90['upper'], color='b', alpha=0.2)
         plt.plot(num_attempts)
         plt.plot(prediction.predicted_mean)
-        plt.fill_between(prediction.summary_frame().index, interval_95['lower'], interval_95['upper'], color='k', alpha=0.1)
-        plt.fill_between(prediction.summary_frame().index, interval_90['lower'], interval_90['upper'], color='k', alpha=0.3)
         plt.show()
-
-    # Source: https://www.statsmodels.org/dev/examples/notebooks/generated/stl_decomposition.html
-    def add_stl_plot(self, fig, res, legend): 
-        axs = fig.get_axes()
-        comps = ["trend", "seasonal", "resid"]
-        for ax, comp in zip(axs[1:], comps):
-            series = getattr(res, comp)
-            if comp == "resid":
-                ax.plot(series, marker="o", linestyle="none")
-            else:
-                ax.plot(series)
-                if comp == "trend":
-                    ax.legend(legend, frameon=False)
 
     def arima_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
@@ -196,7 +181,8 @@ class PlayerStats:
 
         r2 = []
         params = []
-        for i in range(0, len(tries_percents.index)):
+
+        for i in range(0, 10):
 
             percents: Series = tries_percents.iloc[i] / np.sum(tries_percents.iloc[i])
             tries = np.arange(1, 8)
@@ -227,9 +213,20 @@ class PlayerStats:
 
         print(describe(r2))
 
+    def add_norm_mean_col(self, path):
+        
+        def find_norm(row):
+            num_tries_prob = row / np.sum(row)
+            num_tries = np.arange(1, 8)
+            popt, pcov = curve_fit(norm.pdf, num_tries, num_tries_prob, p0=[3, 1])
+            return popt[0]
+
+        self.data['norm_mean'] = self.data.iloc[:, 5:12].apply(find_norm, axis=1)
+        print(self.data)
+        self.data.to_excel(path)
 
 
 if __name__ == "__main__":
 
     ps = PlayerStats("datasets/global-player-stats.xlsx")
-    ps.stl_decompose_num_attempts()
+    ps.add_norm_mean_col("datasets/global-player-stats.xlsx")
