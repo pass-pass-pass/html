@@ -14,6 +14,8 @@ class PartOfSpeech:
     def has_parts(self, words):
         return Series(words).isin(self.data.index)
 
-pos = PartOfSpeech("part_of_speech.csv")
-words = ['about', 'value', 'moose']
-print(pos.get_parts(words))
+if __name__ == "__main__":
+
+    pos = PartOfSpeech("part_of_speech.csv")
+    words = ['about', 'value', 'moose']
+    print(pos.get_parts(words))

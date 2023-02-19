@@ -17,7 +17,9 @@ class WordFreqs:
     def has_freqs(self, words):
         return Series(words).isin(self.data.index)
 
-wf = WordFreqs("word_freqs.csv")
-print(wf.get_freq('about'))
-words = ['about', 'value', 'moose']
-print(wf.get_freqs(words))
+if __name__ == "__main__":
+
+    wf = WordFreqs("word_freqs.csv")
+    print(wf.get_freq('about'))
+    words = ['about', 'value', 'moose']
+    print(wf.get_freqs(words))
