@@ -40,8 +40,9 @@ print(mean)
 
 # predict 3.1 2023
 predict_model = ARIMA(df['num_attempts'], order = (1, 1, 0)).fit()
-future = predict_model.predict(len(df), len(df) + 60, typ='levels')
+future = predict_model.get_prediction(len(df), len(df) + 60)
 future_index = np.arange(len(df), len(df) + 61)
+confi_interval = future.conf_int(alpha = .05 )
 # the start and end date should be the duration that you want to predict
 # predictdata.index = pd.date_range(start = '1/1/2023', end = '2/29/2023')
 print(future)
