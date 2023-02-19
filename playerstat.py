@@ -4,6 +4,11 @@ import pandas as pd
 import numpy as np
 
 from scipy.signal import periodogram
+from scipy.stats import norm, describe
+from scipy.optimize import curve_fit
+
+from sklearn.metrics import r2_score
+
 from matplotlib import pyplot as plt
 
 from statsmodels.graphics.tsaplots import plot_pacf, plot_acf
@@ -15,7 +20,7 @@ from pmdarima import auto_arima
 from pmdarima.utils.visualization import decomposed_plot
 from pmdarima.arima import decompose
 
-from pandas import DataFrame, DateOffset
+from pandas import DataFrame, DateOffset, Series
 
 from wordfreqs import WordFreqs
 from partofspeech import PartOfSpeech
@@ -134,6 +139,45 @@ class PlayerStats:
         to_save = DataFrame(attrs)
         to_save.to_excel(path, index=False)
         
+    def distribution_tries_norm_fit(self):
+        tries_percents = self.data.iloc[:, 5:12]
 
-ps = PlayerStats("global-player-stats.xlsx")
-ps.make_hardmode_table("hardmode-stats.xlsx")
+        r2 = []
+        params = []
+        for i in range(0, len(tries_percents.index)):
+
+            percents: Series = tries_percents.iloc[i] / np.sum(tries_percents.iloc[i])
+            tries = np.arange(1, 8)
+
+            # Guessed values of parameters
+            n = len(tries)                  
+            mean = sum(tries * percents)/n              
+            sigma = sum(percents*(tries-mean)**2)/n
+
+            popt, pcov = curve_fit(norm.pdf, tries, percents, p0=[mean,sigma])
+            prediction = norm.pdf(tries, *popt)
+
+            print(np.sqrt(np.trace(pcov)))
+            print(r2_score(percents, prediction))
+            print(popt)
+
+            r2 = np.append(r2, r2_score(percents, prediction))
+            params = np.append(params, popt)
+
+            # Plot actual data vs. fitted curve
+            # plt.plot(tries, percents, 'b+:',label='actual')
+            # plt.plot(tries, prediction,'ro:',label='prediction')
+            # plt.legend()
+            # plt.title('# Tries Distribution vs. Gaussian Fit')
+            # plt.xlabel('# Tries')
+            # plt.ylabel('Percentage of Players')
+            # plt.show()
+
+        print(describe(r2))
+
+
+
+if __name__ == "__main__":
+
+    ps = PlayerStats("global-player-stats.xlsx")
+    ps.distribution_tries_norm_fit()
