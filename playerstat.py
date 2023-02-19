@@ -1,7 +1,8 @@
 import warnings
-
 import pandas as pd
 import numpy as np
+
+from datetime import datetime, timedelta
 
 from scipy.signal import periodogram
 from scipy.stats import norm, describe
@@ -10,11 +11,14 @@ from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 
-from statsmodels.graphics.tsaplots import plot_pacf, plot_acf
+from statsmodels.graphics.tsaplots import plot_pacf
 from statsmodels.tsa.stattools import adfuller, kpss
 from statsmodels.tools.eval_measures import rmse
-from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.arima.model import ARIMA, ARIMAResults
+from statsmodels.tsa.seasonal import STL, DecomposeResult
+from statsmodels.tsa.forecasting.stl import STLForecast, STLForecastResults
 
 from pmdarima import auto_arima
 from pmdarima.utils.visualization import decomposed_plot
@@ -88,11 +92,55 @@ class PlayerStats:
 
         plt.show()
 
-    def decompose_num_attempts(self):
+    def naive_decompose_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
         decomposed = decompose(num_attempts, type_='multiplicative', m=7)
         decomposed_plot(decomposed, figure_kwargs={})
         _, trend, seasonal, random = decomposed
+
+    def stl_decompose_num_attempts(self):
+        num_attempts = self.data['num_attempts']
+        num_attempts.index = self.data['date']
+        # robust handles initial chaos better than non-robust
+        # STL found a 7 day period
+        result: DecomposeResult = STL(num_attempts, robust=True).fit()
+        # fig = result.plot()
+        # self.add_stl_plot(fig, result_auto_period, ["7 day period", "Auto period"])
+        # plt.show()
+
+        # deseasoned_series = num_attempts - result.seasonal
+        # deseasoned_model: ARIMA = ARIMA(deseasoned_series, order=(1, 1, 0), trend='t').fit()
+        # deseasoned_prediction = deseasoned_model.predict(datetime(2023, 1, 1), datetime(2023, 3, 1))
+        # plt.plot(deseasoned_prediction)
+        # plt.plot(num_attempts)
+        # plt.show()
+
+        arima_params = dict(order=(1, 1, 0), trend='t')
+        forecast_model = STLForecast(num_attempts, ARIMA, model_kwargs=arima_params, period=7, robust=True).fit()
+        print(forecast_model.summary())
+        prediction = forecast_model.get_prediction(datetime(2023, 1, 1), datetime(2023, 3, 1), dynamic=False)
+        interval_95 = prediction.conf_int(0.05)
+        interval_90 = prediction.conf_int(0.1)
+
+        plt.figure()
+        plt.plot(num_attempts)
+        plt.plot(prediction.predicted_mean)
+        plt.fill_between(prediction.summary_frame().index, interval_95['lower'], interval_95['upper'], color='k', alpha=0.1)
+        plt.fill_between(prediction.summary_frame().index, interval_90['lower'], interval_90['upper'], color='k', alpha=0.3)
+        plt.show()
+
+    # Source: https://www.statsmodels.org/dev/examples/notebooks/generated/stl_decomposition.html
+    def add_stl_plot(self, fig, res, legend): 
+        axs = fig.get_axes()
+        comps = ["trend", "seasonal", "resid"]
+        for ax, comp in zip(axs[1:], comps):
+            series = getattr(res, comp)
+            if comp == "resid":
+                ax.plot(series, marker="o", linestyle="none")
+            else:
+                ax.plot(series)
+                if comp == "trend":
+                    ax.legend(legend, frameon=False)
 
     def arima_num_attempts(self):
         num_attempts = self.data['num_attempts'].to_numpy()
@@ -100,16 +148,24 @@ class PlayerStats:
         training_data = num_attempts[:NUM_TRAINING]
         validation_data = num_attempts[NUM_TRAINING:]
 
-        arima_auto = auto_arima(training_data, trace=True, m=7, suppress_warnings=True)
-        arima_auto.fit(training_data)
-        prediction = arima_auto.predict(len(validation_data))
+        # arima_auto = auto_arima(training_data, trace=True, m=7, suppress_warnings=True)
+        # arima_auto.fit(training_data)
+        # prediction = arima_auto.predict(len(validation_data))
 
-        abs_error = rmse(prediction, validation_data)
-        rel_error = abs_error / np.mean(validation_data)
-        print(rel_error)
-
+        # abs_error = rmse(prediction, validation_data)
+        # rel_error = abs_error / np.mean(validation_data)
+        # print(rel_error)
         
-        plt.plot(validation_data)
+        # plt.plot(validation_data)
+        # plt.plot(prediction)
+        # plt.show()
+
+        arima_auto = auto_arima(num_attempts, trace=True, m=1, suppress_warnings=True)
+        arima_auto.fit(num_attempts)
+        prediction = arima_auto.predict(60)
+
+        print(prediction)
+
         plt.plot(prediction)
         plt.show()
         
@@ -176,4 +232,4 @@ class PlayerStats:
 if __name__ == "__main__":
 
     ps = PlayerStats("datasets/global-player-stats.xlsx")
-    ps.make_hardmode_table("datasets/global-player-stats.xlsx")
+    ps.stl_decompose_num_attempts()

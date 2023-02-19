@@ -5,9 +5,10 @@ from pmdarima import auto_arima
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error
-df = pd.read_excel("global-player-stats.xlsx")
+df = pd.read_excel("datasets/global-player-stats.xlsx")
 
 df['num_attempts'].plot(figsize= (20,9))
+series = df['num_attempts']
 
 # now, train the model
 potential_model = auto_arima(series, trace = True, suppress_warnings = True)
