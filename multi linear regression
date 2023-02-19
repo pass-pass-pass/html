@@ -52,6 +52,7 @@ print(np.sqrt(metrics.mean_squared_error(ytest,y_test_predict)))
 x_for_real = pd.dataframe().values # create a new dataset for the data we want
 model_for_real = LinearRegression()
 model_for_real.fit(X,y)
+print(model_for_real.coef_)
 
 model_for_real.predict(x_for_real)
 
