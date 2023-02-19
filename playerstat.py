@@ -114,12 +114,12 @@ class PlayerStats:
         plt.show()
         
     def make_hardmode_table(self, path):
-        wf = WordFreqs("word_freqs.csv")
-        pos = PartOfSpeech("part_of_speech.csv")
-        valid_data = self.data.loc[wf.has_freqs(self.data['word'])]
-        valid_data = valid_data.loc[pos.has_parts(valid_data['word'])]
+        wf = WordFreqs("datasets/word_freqs.csv")
+        pos = PartOfSpeech("datasets/part_of_speech.csv")
 
-        dates = pd.to_datetime(valid_data['date'])
+        is_valid_word = wf.has_freqs(self.data['word']) & pos.has_parts(self.data['word'])
+        valid_data = self.data.loc[is_valid_word]
+
         words = valid_data['word']
         freqs = wf.get_freqs(words)
         parts = pos.get_parts(words)
@@ -128,16 +128,12 @@ class PlayerStats:
 
         parts.index = words.index
         freqs.index = words.index
-        attrs = {
-            'date': dates,
-            'word': words,
-            'freq': freqs,
-            'part_of_speech': parts,
-            'hardmode_percent': hardmode_percents,
-            'num_dup_letters': num_dup_letters,
-        }
-        to_save = DataFrame(attrs)
-        to_save.to_excel(path, index=False)
+        self.data['freq'] = freqs
+        self.data['hardmode_percent'] = hardmode_percents
+        self.data['num_dup_letters'] = num_dup_letters
+        self.data['is_valid_word'] = is_valid_word
+
+        self.data.to_excel(path, index=False)
         
     def distribution_tries_norm_fit(self):
         tries_percents = self.data.iloc[:, 5:12]
@@ -179,5 +175,5 @@ class PlayerStats:
 
 if __name__ == "__main__":
 
-    ps = PlayerStats("global-player-stats.xlsx")
-    ps.distribution_tries_norm_fit()
+    ps = PlayerStats("datasets/global-player-stats.xlsx")
+    ps.make_hardmode_table("datasets/global-player-stats.xlsx")

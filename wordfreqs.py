@@ -19,7 +19,7 @@ class WordFreqs:
 
 if __name__ == "__main__":
 
-    wf = WordFreqs("word_freqs.csv")
+    wf = WordFreqs("datasets/word_freqs.csv")
     print(wf.get_freq('about'))
     words = ['about', 'value', 'moose']
     print(wf.get_freqs(words))

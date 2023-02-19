@@ -16,6 +16,6 @@ class PartOfSpeech:
 
 if __name__ == "__main__":
 
-    pos = PartOfSpeech("part_of_speech.csv")
+    pos = PartOfSpeech("datasets/part_of_speech.csv")
     words = ['about', 'value', 'moose']
     print(pos.get_parts(words))
