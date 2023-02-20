@@ -47,8 +47,8 @@ class PlayerStats:
         plt.figure()
         plt.xlabel("Date")
         plt.ylabel("Number of attempts")
-        plt.title("Number of Wordle Attempts per Day vs. Date")
-        plt.plot(self.data['date'], self.data['num_attempts'])
+        plt.title("Number of Wordle Attempts per Day")
+        plt.plot(self.data['date'].iloc[100:200], self.data['num_attempts'].iloc[100:200])
         plt.show()
 
     def explore_num_attempts(self):
@@ -107,6 +107,9 @@ class PlayerStats:
         result: DecomposeResult = STL(num_attempts, robust=True).fit()
         result.plot()
         # self.add_stl_plot(fig, result_auto_period, ["7 day period", "Auto period"])
+        plt.figure()
+        plt.plot(result.seasonal)
+        print(result.seasonal.head(30))
         plt.show()
 
     def stl_predict_num_attempts(self):
@@ -132,6 +135,7 @@ class PlayerStats:
         arima_params = dict(order=(1, 1, 0), trend='t')
         forecast_model = STLForecast(num_attempts, ARIMA, model_kwargs=arima_params, period=7, robust=True).fit()
         print(forecast_model.summary())
+
         prediction = forecast_model.get_prediction(datetime(2023, 1, 1), datetime(2023, 3, 1), dynamic=True)
         interval_95 = prediction.conf_int(0.05)
         interval_90 = prediction.conf_int(0.1)
@@ -190,6 +194,7 @@ class PlayerStats:
         self.data['hardmode_percent'] = hardmode_percents
         self.data['num_dup_letters'] = num_dup_letters
         self.data['is_valid_word'] = is_valid_word
+        self.data['part'] = parts
 
         self.data.to_excel(path, index=False)
         
@@ -262,4 +267,4 @@ class PlayerStats:
 if __name__ == "__main__":
 
     ps = PlayerStats("datasets/global-player-stats.xlsx")
-    ps.add_weekend_col("datasets/global-player-stats.xlsx")
+    ps.make_hardmode_table("datasets/global-player-stats.xlsx")
