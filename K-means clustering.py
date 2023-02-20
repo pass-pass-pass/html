@@ -13,9 +13,17 @@ from sklearn.preprocessing import MinMaxScaler
 df = pd.read_excel('global-player-stats.xlsx')    # read into the data
 
 df.iloc[:] = df.iloc[::-1].values
-df = df.drop(columns= 'hardmode_percent')
 #preprocessing data
+df = df.drop(columns= 'date')
 df = df.dropna()
+print(df.columns)
+print(len(df.columns))
+data = [ 359,359,354,'eerie', 0, 0, 0, 0.41882655, 10.78132608 ,31.5658326, 32.62737598 ,19.11441236, 5.43779202, 0,0,0,"false", 0, 'false']
+
+
+
+df.loc[-1]  = data
+df = df.drop(columns= 'hardmode_percent')
 
 print(df)
 
@@ -32,39 +40,43 @@ scaler.fit(df[['5_try_percent']])
 df["5_try_percent"] = scaler.transform(df[['5_try_percent']])
 scaler.fit(df[['6_try_percent']])
 df["6_try_percent"] = scaler.transform(df[['6_try_percent']])
-scaler.fit(df[['freq']])
-df["freq"] = scaler.transform(df[['freq']])
+# scaler.fit(df[['freq']])
+# df["freq"] = scaler.transform(df[['freq']])
 
 
-
+df = df.drop(columns= 'num_hardmode_attempts')
 
 
 # # print(df.iloc[:,5:14])
 
 
 # # # do elbow rule to find the best k 
+print(df.columns)
 
 SSE = []
 for k in range(1,11):
     km = KMeans(n_clusters= k)
-    km.fit(df.iloc[80:, 6:13])
+    km.fit(df.iloc[80:, 5:12])
     SSE.append(km.inertia_)
 plt.plot( range(1,11),SSE, marker = "*")
+plt.title("elbow rule")
+plt.xlabel('k numbers')
 plt.show()
-
-
 # # # # # 3 should be the best
+data_slice = df.iloc[:, 5:12]
 
 km = KMeans(n_clusters = 3)
-predict = km.fit_predict(df.iloc[:, 6:14])
-
+predict = km.fit_predict(data_slice)
+print(data_slice.columns)
 df['cluster'] = predict
 
 
 df_easy = df[df.cluster == 0]
 df_med = df[df.cluster == 1]
 df_hard = df[df.cluster == 2]
-
+df_hard.to_excel('hard.xlsx')
+df_med.to_excel('med.xlsx')
+df_easy.to_excel('easy.xlsx')
 # centroids for the clusttering
 # print(km.cluster_centers_)
 
@@ -76,6 +88,7 @@ plt.legend()
 
 print(np.mean(df_easy['freq'].values), 'mean of freq')
 print(np.mean(df_med['freq'].values), 'mean of freq')
+
 
 
 
@@ -98,24 +111,24 @@ plt.title("pie chart of the percentage of difficculty levels")
 # It is most commonly used to evaluate the goodness of split by a K-Means clustering algorithm for a given number of clusters.
 # bigger, better
 
-ch_ = calinski_harabasz_score(df.iloc[:, 6:14], predict)
+ch_ = calinski_harabasz_score(df.iloc[:, 5:12], predict)
 print("ch index", ch_)
-print(df.iloc[:, 6:14])
 
 # #The Davies-Bouldin index (DBI) is one of the clustering algorithms evaluation measures.
 # #  It is most commonly used to evaluate the goodness of split by a K-Means clustering algorithm for a given number of clusters.
 # the small the better
 
-db_ = davies_bouldin_score(df.iloc[:, 6:14], predict)
+db_ = davies_bouldin_score(df.iloc[:, 5:12], predict)
 print(db_, "db index")
 index = [[ch_, db_]]
 labels2 = ["db index"]
-
-plt.table(cellText= index, rowLabels= labels2)
+figure2 = plt.subplot()
+figure2.table(cellText= index, rowLabels= labels2)
 
 
 
 plt.show()
+
 
 
 
