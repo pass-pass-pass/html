@@ -2,7 +2,7 @@ from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-
+from tabulate import tabulate
 import pandas as pd
 from sklearn import datasets
 from sklearn.metrics import calinski_harabasz_score
@@ -78,10 +78,21 @@ print(np.mean(df_easy['freq'].values), 'mean of freq')
 print(np.mean(df_med['freq'].values), 'mean of freq')
 
 
+
 plt.grid(True)
 plt.xlabel("date")
 plt.ylabel("fail percent")
 plt.title("date against fail percent to view the general difficulty and model accuracy")
+
+
+
+
+size = [len(df_easy), len(df_med),len(df_hard)]
+labels = 'easy','med', 'hard'
+fig,pie_ = plt.subplots()
+pie_.pie(size, labels = labels, autopct='%1.1f%%')
+plt.title("pie chart of the percentage of difficculty levels")
+
 # calculate the reliability of the model
 # The Calinski-Harabasz index (CH) is one of the clustering algorithms evaluation measures. 
 # It is most commonly used to evaluate the goodness of split by a K-Means clustering algorithm for a given number of clusters.
@@ -97,7 +108,14 @@ print(df.iloc[:, 6:14])
 
 db_ = davies_bouldin_score(df.iloc[:, 6:14], predict)
 print(db_, "db index")
+index = [[ch_, db_]]
+labels2 = ["db index"]
+
+plt.table(cellText= index, rowLabels= labels2)
+
 
 
 plt.show()
+
+
 
