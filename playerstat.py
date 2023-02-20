@@ -9,6 +9,7 @@ from scipy.stats import norm, describe
 from scipy.optimize import curve_fit
 
 from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
@@ -112,6 +113,22 @@ class PlayerStats:
         # https://www.statsmodels.org/dev/generated/statsmodels.tsa.forecasting.stl.STLForecast.html#statsmodels.tsa.forecasting.stl.STLForecast
         num_attempts = self.data['num_attempts']
         num_attempts.index = self.data['date']
+
+        num_attempts_train, num_attempts_test = train_test_split(num_attempts, test_size=0.25, shuffle=False)
+
+        arima_params = dict(order=(1, 1, 0), trend='t')
+        test_model = STLForecast(num_attempts_train, ARIMA, model_kwargs=arima_params, period=7, robust=True).fit()
+        print(test_model.summary())
+        test_prediction = test_model.get_prediction(len(num_attempts_train), len(num_attempts) - 1, dynamic=False)
+        test_prediction = test_prediction.predicted_mean
+        test_prediction.index = num_attempts_test.index
+
+        print(rmse(test_prediction, num_attempts_test))
+        plt.figure()
+        plt.plot(num_attempts_test)
+        plt.plot(test_prediction)
+        plt.show()
+
         arima_params = dict(order=(1, 1, 0), trend='t')
         forecast_model = STLForecast(num_attempts, ARIMA, model_kwargs=arima_params, period=7, robust=True).fit()
         print(forecast_model.summary())
@@ -225,8 +242,24 @@ class PlayerStats:
         print(self.data)
         self.data.to_excel(path)
 
+    def add_weekend_col(self, path):
+        is_weekend = self.data['date'].dt.day_of_week > 4
+        print(is_weekend.head(20))
+        self.data['is_weekend'] = is_weekend
+        self.data.to_excel(path)
+
+    def draw_norm_mean(self):
+        norm_means = self.data['norm_mean']
+        mean = np.mean(norm_means)
+        sigma = np.std(norm_means)
+        outlier_range = np.array([mean, mean]) + np.array([-3*sigma, 3*sigma])
+        plt.scatter(np.zeros_like(norm_means), norm_means)
+        plt.scatter((0, 0), outlier_range)
+        plt.figure()
+        plt.hist(norm_means, np.linspace(2, 8, 24))
+        plt.show()
 
 if __name__ == "__main__":
 
     ps = PlayerStats("datasets/global-player-stats.xlsx")
-    ps.add_norm_mean_col("datasets/global-player-stats.xlsx")
+    ps.add_weekend_col("datasets/global-player-stats.xlsx")
