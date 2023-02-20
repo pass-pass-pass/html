@@ -4,24 +4,41 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 from sklearn import metrics
 import numpy as np
+from mlinsights.mlmodel import IntervalRegressor
 
-df = pd.read_excel("datasets/global-player-stats.xlsx")
+df = pd.read_excel("global-player-stats.xlsx")
+df["is_weekend"] = df["is_weekend"].astype(int)
 
+df_pos = pd.read_excel('hardmode-stats.xlsx')
+df_pos =df_pos.drop(columns = 'hardmode_percent')
+df_pos = df_pos.drop(columns = 'num_dup_letters')
 # drop unnecessary data
+new_df = pd.get_dummies(df_pos, columns= ['part_of_speech'])
+new_df = new_df.drop(columns= 'freq')
+new_df = new_df.drop(columns= 'date')
 
-df = df.drop(columns = 'word')
-df = df.drop(columns = 'num_attempts')
+df = df.merge(new_df, on = ['word'])
+
+df= df.drop(columns= 'num_hardmode_attempts')
+df= df.drop(columns= 'hardmode_percent')
+df= df.drop(columns= 'norm_mean')
+df= df.drop(columns= 'is_valid_word')
+df= df.drop(columns= 'Unnamed: 0')
+df= df.drop(columns= 'contest_num')
+
+df.to_excel("test3.xlsx")
+
 # slice data so that we can have all the relavant data except for all the tries
-num_tries = np.tile(np.arange(1, 8), (df.shape[0], 1))
-tries_probability = df.iloc[:, 3:10]
-df['mean_num_tries'] = np.average(num_tries, weights=tries_probability, axis=1)
+# df['mean_num_tries'] = np.average(num_tries, weights=tries_probability, axis=1)
+# num_tries = np.tile(np.arange(1, 8), (df.shape[0], 1))
+# tries_probability = df.iloc[:, 3:10]
 
-print(df)
+# print(df)
 
-X = df[('date', '')].values
+X = df.iloc[:,9: ].values
 
-# y is the data of six tries
-y = df[1].values
+# # # y is the data of six tries
+y = df.iloc[:,2:9 ].values
 
 
 # test the model
