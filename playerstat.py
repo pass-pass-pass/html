@@ -198,6 +198,12 @@ class PlayerStats:
 
         self.data.to_excel(path, index=False)
         
+    def make_pt2_dataset(self, path):
+        new_data = self.data[self.data['is_valid_word'] == True]
+        new_data = new_data.drop(columns=['contest_num', 'num_attempts', 'num_hardmode_attempts', 'hardmode_percent', 'is_valid_word'])
+        print(new_data.head())
+        new_data.to_excel(path, index=False)
+
     def distribution_tries_norm_fit(self):
         tries_percents = self.data.iloc[:, 5:12]
 
@@ -235,6 +241,7 @@ class PlayerStats:
 
         print(describe(r2))
 
+
     def add_norm_mean_col(self, path):
         
         def find_norm(row):
@@ -267,4 +274,4 @@ class PlayerStats:
 if __name__ == "__main__":
 
     ps = PlayerStats("datasets/global-player-stats.xlsx")
-    ps.make_hardmode_table("datasets/global-player-stats.xlsx")
+    ps.make_pt2_dataset("datasets/part2-data.xlsx")
